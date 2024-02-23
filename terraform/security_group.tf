@@ -1,6 +1,6 @@
 resource "aws_security_group" "monitoring" {
   name        = "monitoring-server"
-  
+
   ingress {
     description = "Allow SSH"
     from_port        = 22
