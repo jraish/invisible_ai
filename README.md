@@ -12,6 +12,19 @@ to install the modules used in this terraform config.
 
 The terraform script also assumes you have private and public SSH keys in the terraform directory called `monitoring` and `monitoring.pub`, respectively. Those aren't actually necessary - but if you don't use them, comment out the references to keys in the ec2 file or terraform will be sad.
 
+Finally, this repo assumes you have AWS secret and access keys saved as environment variables. I don't think running terraform locally with env variables is necessarily ideal, but I would imagine that in a production environment this would be run as part of a deployment pipeline that had those secrets saved; another option would be to assume a specified IAM role with restricted permissions.
+
+When that's all set up, run 
+```
+terraform apply
+```
+from the root of the terraform directory.
+
+## Assumptions
+I mentioned a few things in installation that I'd change if this were running in production.
+
+Another thing is the security group permissions. They're *quite* permissive here, and they should be a lot tighter. If this were running in production, I'd rather put all of this in a private subnet with no ingress access to the outside internet, and put some sort of consumer instance in the public subnet that could read these metrics and make them available to the world.
+
 ## Functionality
 This terraform repo should create a VPC and two EC2 instances running Ubuntu and Prometheus, with the follower scraping data from the leader. But "should" is a key word here. More on that below.
 
