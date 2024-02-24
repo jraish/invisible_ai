@@ -1,21 +1,90 @@
-# resource "aws_vpc" "monitoring" {
-#   cidr_block = "10.0.0.0/16"
-# }
-# resource "aws_subnet" "monitoring" {
-#   vpc_id     = aws_vpc.monitoring.id
-#   cidr_block = cidrsubnet(aws_vpc.monitoring.cidr_block, 8, 0)
-# }
-# resource "aws_internet_gateway" "monitoring" {
-#   vpc_id = aws_vpc.monitoring.id
-# }
-# resource "aws_route_table" "public" {
-#   vpc_id = aws_vpc.monitoring.id
-#   route {
-#     cidr_block = "0.0.0.0/0"
-#     gateway_id = aws_internet_gateway.monitoring.id
-#   }
-# }
-# resource "aws_route_table_association" "monitoring" {
-#   subnet_id      = aws_subnet.monitoring.id
-#   route_table_id = aws_route_table.public.id
-# }
+resource "aws_vpc" "prometheus_vpc" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support = true
+
+  tags = {
+    Name = "prom_vpc"
+  }
+}
+
+resource "aws_internet_gateway" "prometheus_ig" {
+  vpc_id = "${aws_vpc.prometheus_vpc.id}"
+
+  tags = {
+    Name = "prom_ig"
+  }
+}
+
+resource "aws_route" "prometheus_internet_access" {
+  route_table_id         = aws_vpc.prometheus_vpc.main_route_table_id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = "${aws_internet_gateway.prometheus_ig.id}"
+}
+
+resource "aws_subnet" "prometheus_subnet" {
+  vpc_id                  = aws_vpc.prometheus_vpc.id
+  cidr_block              = var.prometheus_server_subnet_cidr1
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "prom_subnet"
+  }
+}
+
+resource "aws_route_table" "prometheus_route_table" {
+    vpc_id = aws_vpc.prometheus_vpc.id
+
+    route {
+        cidr_block = "0.0.0.0/0"
+        gateway_id = aws_internet_gateway.prometheus_ig.id
+    }
+  tags = {
+    Name = "prom_route_table"
+  }
+}
+
+resource "aws_route_table_association" "prometheus_route_table_association" {
+    subnet_id      = aws_subnet.prometheus_subnet.id
+    route_table_id = aws_route_table.prometheus_route_table.id
+}
+
+resource "aws_security_group" "prometheus_security_group" {
+  name   = "prometheus_security_group"
+  description = "Security group for prometheus"
+
+  vpc_id = aws_vpc.prometheus_vpc.id
+
+
+  ingress {
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+      from_port = 0
+      to_port = 0
+      protocol = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "prom_sg"
+  }
+
+}
