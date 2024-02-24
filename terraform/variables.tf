@@ -11,3 +11,11 @@ variable "prometheus_server_subnet_cidr1" {
   description = "Promethus Server Subnet CIDR"
   default = "11.0.1.0/24"
 }
+
+variable "environment" {
+  default = "test"
+}
+
+variable "project_name" {
+  default = "invisible_ai_prometheus"
+}
